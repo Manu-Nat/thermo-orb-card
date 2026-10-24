@@ -20,6 +20,18 @@ Everything is optional. The card only shows entities that exist and have a usabl
 - Sizes of the numbers, buttons and selectors adjustable separately, and a colour for every orb state.
 - Full visual editor and Italian/English interface, based on your Home Assistant language. Works on phones.
 
+## Screenshots
+
+| Auto | Manual | Off |
+| --- | --- | --- |
+| ![Auto mode](images/screenshot-auto.png) | ![Manual mode](images/screenshot-manual.png) | ![Off](images/screenshot-off.png) |
+
+Air conditioner with its own controls and colours: cooling, heating and dehumidifying.
+
+| Cool | Heat | Dry |
+| --- | --- | --- |
+| <img src="images/screenshot-ac-cool.png" width="260" alt="Cooling"> | <img src="images/screenshot-ac-heat.png" width="260" alt="Heating"> | <img src="images/screenshot-ac-dry.png" width="260" alt="Dehumidifying"> |
+
 ## Installation
 
 ### HACS (recommended)
@@ -138,7 +150,7 @@ All keys except the devices themselves are optional: leave out whatever you do n
 - The global mode buttons **only change the helper**. Something must react and command the devices: the optional package below does it for `climate` entities.
 - If you use your own helper, each `option` in `mode_options` must match one of its options. Case does not matter (`auto` matches `Auto`) and the card always sends the exact helper value.
 - Tapping a manual/automatic or season chip toggles a boolean or cycles through the options of an `input_select`; a long press (half a second) opens the details.
-- The orb colours for manual and auto follow `manual_auto_entity`: its state can be text such as `Manual` / `Auto` (for example an `input_select`) or on/off (for example an `input_boolean`, where `manual_auto_on` says what *on* means).
+- Each orb takes its colour from the device's own mode: a device in `auto` uses `orb_color_auto`, a device in `heat` uses `orb_color_manual` (or `orb_color_heat` if not set), and a device reporting `hvac_action: heating` uses `orb_color_heat_demand`. So with the global mode on Auto, a single device you switch to heat shows the manual colour. If `manual_auto_entity` is text such as `Manual` / `Auto` (for example an `input_select`), devices in `heat` follow that global state instead.
 - Temperatures are shown in the unit of your Home Assistant installation.
 
 ## Optional package: global modes and house statistics

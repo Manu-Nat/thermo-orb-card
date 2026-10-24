@@ -20,6 +20,18 @@ Tutto è facoltativo. La card mostra solo le entità che esistono e hanno uno st
 - Dimensioni di cifre, pulsanti e selettori regolabili separatamente e un colore per ogni stato dell'orb.
 - Editor visuale completo e interfaccia italiano/inglese in base alla lingua di Home Assistant. Funziona su smartphone.
 
+## Anteprima
+
+| Auto | Manuale | Spento |
+| --- | --- | --- |
+| ![Modalità auto](images/screenshot-auto.png) | ![Modalità manuale](images/screenshot-manual.png) | ![Spento](images/screenshot-off.png) |
+
+Climatizzatore con controlli e colori propri: raffrescamento, riscaldamento e deumidificazione.
+
+| Freddo | Caldo | Deumidifica |
+| --- | --- | --- |
+| <img src="images/screenshot-ac-cool.png" width="260" alt="Raffrescamento"> | <img src="images/screenshot-ac-heat.png" width="260" alt="Riscaldamento"> | <img src="images/screenshot-ac-dry.png" width="260" alt="Deumidificazione"> |
+
 ## Installazione
 
 ### HACS (consigliato)
@@ -138,7 +150,7 @@ Tutte le chiavi, tranne i dispositivi stessi, sono facoltative: ometti quelle ch
 - I pulsanti di modalità globale **cambiano soltanto l'helper**. Serve qualcosa che reagisca e comandi i dispositivi: il package facoltativo qui sotto lo fa per le entità `climate`.
 - Se usi un tuo helper, ogni `option` in `mode_options` deve corrispondere a una sua opzione. Le maiuscole non contano (`auto` corrisponde a `Auto`) e la card invia sempre il valore esatto dell'helper.
 - Toccando un chip manuale/automatico o stagione si commuta un booleano o si scorrono le opzioni di un `input_select`; una pressione prolungata (mezzo secondo) apre i dettagli.
-- I colori dell'orb per manuale e auto seguono `manual_auto_entity`: il suo stato può essere un testo come `Manual` / `Auto` (ad esempio un `input_select`) oppure on/off (ad esempio un `input_boolean`, dove `manual_auto_on` indica cosa significa *on*).
+- Ogni orb prende il colore dalla modalità del dispositivo stesso: un dispositivo in `auto` usa `orb_color_auto`, uno in `heat` usa `orb_color_manual` (o `orb_color_heat` se non impostato) e uno che riporta `hvac_action: heating` usa `orb_color_heat_demand`. Quindi con la modalità globale su Auto, un singolo dispositivo che metti in riscaldamento mostra il colore manuale. Se `manual_auto_entity` è un testo come `Manual` / `Auto` (ad esempio un `input_select`), i dispositivi in `heat` seguono invece quello stato globale.
 - Le temperature sono mostrate nell'unità della tua installazione di Home Assistant.
 
 ## Package facoltativo: modalità globali e statistiche di casa
