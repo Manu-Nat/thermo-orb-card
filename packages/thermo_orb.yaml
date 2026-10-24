@@ -1,0 +1,202 @@
+# Thermo Orb Card - optional Home Assistant package
+# Pacchetto opzionale per Thermo Orb Card
+#
+# Creates / Crea:
+#   - input_select.thermo_orb_mode               (auto / heat / off)
+#   - an automation that applies the selected mode to your climate entities
+#   - one active-valve count sensor (edit its valve list to use it)
+#   - six template sensors: average / max / min of temperature and humidity
+#
+# BEFORE USING / PRIMA DELL'USO - edit the 4 places marked "EDIT ME":
+#   1. climate entities   (automation, "variables")
+#   2. thermostatic valves to count when actively heating
+#   3. temperature sensors (first template sensor)
+#   4. humidity sensors    (fourth template sensor)
+# Each list is written once and reused by the other sensors/modes (YAML anchors:
+# "&name" defines a list, "*name" reuses it - do not remove them).
+#
+# Requirements / Requisiti: Home Assistant 2025.10 or newer, sources in °C and %.
+
+input_select:
+  thermo_orb_mode:
+    name: Thermo Orb mode
+    icon: mdi:thermometer
+    options:
+      - "auto"
+      - "heat"
+      - "off"
+
+automation:
+  - id: thermo_orb_global_mode
+    alias: Thermo Orb - global mode
+    description: Applies the mode selected on the Thermo Orb card to your climate entities.
+    mode: restart
+    variables:
+      # EDIT ME - your climate entities (one per line).
+      # Every device must support the mode it receives. If some do not support
+      # "auto" or "heat", give that mode its own list instead of "*thermo_orb_entities".
+      climate_auto_entities: &thermo_orb_entities
+        - climate.replace_with_your_climate
+      climate_heat_entities: *thermo_orb_entities
+      climate_off_entities: *thermo_orb_entities
+    triggers:
+      - trigger: state
+        entity_id: input_select.thermo_orb_mode
+    actions:
+      - choose:
+          - conditions:
+              - condition: state
+                entity_id: input_select.thermo_orb_mode
+                state: "auto"
+            sequence:
+              - action: climate.set_hvac_mode
+                continue_on_error: true
+                target:
+                  entity_id: "{{ climate_auto_entities }}"
+                data:
+                  hvac_mode: auto
+          - conditions:
+              - condition: state
+                entity_id: input_select.thermo_orb_mode
+                state: "heat"
+            sequence:
+              - action: climate.set_hvac_mode
+                continue_on_error: true
+                target:
+                  entity_id: "{{ climate_heat_entities }}"
+                data:
+                  hvac_mode: heat
+          - conditions:
+              - condition: state
+                entity_id: input_select.thermo_orb_mode
+                state: "off"
+            sequence:
+              - action: climate.set_hvac_mode
+                continue_on_error: true
+                target:
+                  entity_id: "{{ climate_off_entities }}"
+                data:
+                  hvac_mode: "off"
+
+template:
+  - sensor:
+      - name: Thermo Orb Active Valves
+        default_entity_id: sensor.thermo_orb_active_valves
+        unique_id: thermo_orb_active_valves
+        icon: mdi:radiator
+        unit_of_measurement: "valvole"
+        state_class: measurement
+        variables:
+          # EDIT ME - thermostatic climate entities to count when heating.
+          valve_entities: &thermo_orb_valves
+            - climate.replace_with_a_thermostatic_valve
+        state: >-
+          {% set ns = namespace(count=0) %}
+          {% for entity in expand(valve_entities) %}
+            {% if state_attr(entity.entity_id, 'hvac_action') == 'heating' %}
+              {% set ns.count = ns.count + 1 %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.count }}
+
+      - name: Thermo Orb Temperature Average
+        default_entity_id: sensor.thermo_orb_temperature_avg
+        unique_id: thermo_orb_temperature_avg
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C"
+        variables:
+          # EDIT ME - your room temperature sensors (one per line).
+          # Do not add the Thermo Orb sensors themselves.
+          source_entities: &thermo_orb_temperature_sources
+            - sensor.replace_with_temperature_sensor
+        state: >-
+          {% set values = expand(source_entities)
+            | selectattr('state', 'is_number')
+            | map(attribute='state')
+            | map('float')
+            | list %}
+          {{ ((values | sum) / (values | count)) | round(1) if values else none }}
+
+      - name: Thermo Orb Temperature Maximum
+        default_entity_id: sensor.thermo_orb_temperature_max
+        unique_id: thermo_orb_temperature_max
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C"
+        variables:
+          source_entities: *thermo_orb_temperature_sources
+        state: >-
+          {% set values = expand(source_entities)
+            | selectattr('state', 'is_number')
+            | map(attribute='state')
+            | map('float')
+            | list %}
+          {{ (values | max) | round(1) if values else none }}
+
+      - name: Thermo Orb Temperature Minimum
+        default_entity_id: sensor.thermo_orb_temperature_min
+        unique_id: thermo_orb_temperature_min
+        device_class: temperature
+        state_class: measurement
+        unit_of_measurement: "°C"
+        variables:
+          source_entities: *thermo_orb_temperature_sources
+        state: >-
+          {% set values = expand(source_entities)
+            | selectattr('state', 'is_number')
+            | map(attribute='state')
+            | map('float')
+            | list %}
+          {{ (values | min) | round(1) if values else none }}
+
+      - name: Thermo Orb Humidity Average
+        default_entity_id: sensor.thermo_orb_humidity_avg
+        unique_id: thermo_orb_humidity_avg
+        device_class: humidity
+        state_class: measurement
+        unit_of_measurement: "%"
+        variables:
+          # EDIT ME - your room humidity sensors (one per line).
+          # Do not add the Thermo Orb sensors themselves.
+          source_entities: &thermo_orb_humidity_sources
+            - sensor.replace_with_humidity_sensor
+        state: >-
+          {% set values = expand(source_entities)
+            | selectattr('state', 'is_number')
+            | map(attribute='state')
+            | map('float')
+            | list %}
+          {{ ((values | sum) / (values | count)) | round(1) if values else none }}
+
+      - name: Thermo Orb Humidity Maximum
+        default_entity_id: sensor.thermo_orb_humidity_max
+        unique_id: thermo_orb_humidity_max
+        device_class: humidity
+        state_class: measurement
+        unit_of_measurement: "%"
+        variables:
+          source_entities: *thermo_orb_humidity_sources
+        state: >-
+          {% set values = expand(source_entities)
+            | selectattr('state', 'is_number')
+            | map(attribute='state')
+            | map('float')
+            | list %}
+          {{ (values | max) | round(1) if values else none }}
+
+      - name: Thermo Orb Humidity Minimum
+        default_entity_id: sensor.thermo_orb_humidity_min
+        unique_id: thermo_orb_humidity_min
+        device_class: humidity
+        state_class: measurement
+        unit_of_measurement: "%"
+        variables:
+          source_entities: *thermo_orb_humidity_sources
+        state: >-
+          {% set values = expand(source_entities)
+            | selectattr('state', 'is_number')
+            | map(attribute='state')
+            | map('float')
+            | list %}
+          {{ (values | min) | round(1) if values else none }}
